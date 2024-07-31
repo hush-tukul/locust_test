@@ -91,9 +91,22 @@ class UserBehavior(User):
         self.background_greenlet = gevent.spawn(self.background_function)
 
     def background_function(self):
-        """ Function that runs every 5 seconds and prints its name """
+        """ Background function that runs every 5 seconds """
         while True:
-            print("Background function running...")
+            start_time = datetime.now()
+            print(f"Background function running...{start_time.strftime('%H:%M:%S')}")
+            request = vacancy_service_pb2.GetVacanciesRequest(page=1, limit=5)
+            print(f"request: {request} type: {type(request)}")
+            #
+            # vacancy_stream = self.vacancy_stub.GetVacancies(request)
+            # try:
+            #     # Process the stream of vacancies
+            #     for vacancy in vacancy_stream:
+            #         print(f"Vacancy: {vacancy}")
+            #
+            # except Exception as e:
+            #     print(f"{e}")
+
             gevent.sleep(5)  # Sleep for 5 seconds
 
 
