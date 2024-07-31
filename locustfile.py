@@ -1,6 +1,7 @@
 
+from datetime import datetime
 
-
+import gevent
 from locust import User, task, between, events
 import grpc
 import auth_service_pb2
@@ -22,9 +23,13 @@ bloom_users = {
     'jtjuhtjut@belgianairways.com': 'password',
 }
 
+
 class UserBehavior(User):
     wait_time = between(5, 15)
     host = "vacancies.cyrextech.net:7823"  # Note: no 'http://' prefix for gRPC
+
+
+
 
     def on_start(self):
         # Create channels and stubs for authentication and vacancy services
@@ -35,6 +40,11 @@ class UserBehavior(User):
 
         # Authenticate user
         self.authenticate_user()
+        # Start the background task
+        self.start_background_function()
+
+
+
 
 
     def authenticate_user(self):
@@ -76,6 +86,21 @@ class UserBehavior(User):
                 exception=e
             )
 
+    def start_background_function(self):
+        """ Start a background function that prints its name every 5 seconds """
+        self.background_greenlet = gevent.spawn(self.background_function)
+
+    def background_function(self):
+        """ Function that runs every 5 seconds and prints its name """
+        while True:
+            print("Background function running...")
+            gevent.sleep(5)  # Sleep for 5 seconds
+
+
+
+
+
+
     @task
     def create_vacancy_recurring(self):
         # Ensure user is authenticated
@@ -83,11 +108,12 @@ class UserBehavior(User):
             self.authenticate_user()
 
         if self.authenticated_user:
+            start_time = time.time()
+            print(f"create_vacancy_recurring start_time: {start_time}")
+
             # Create vacancy with pseudo-random data
             self.create_vacancy()
-
-        # Sleep for 10 seconds before the next task
-        time.sleep(10)
+            time.sleep(10)
 
     def create_vacancy(self):
         # Generate pseudo-random data for vacancy details
@@ -234,15 +260,16 @@ class UserBehavior(User):
             print(f"gRPC failed with status code {e.code()}: {e.details()}")
 
             # Trigger Locust failure event
-            events.request.fire(
+            events.request_failure.fire(
                 request_type="gRPC",
                 name="DeleteVacancy",
                 response_time=(time.time() - start_time) * 1000,
                 exception=e
             )
 
-if __name__ == '__main__':
-    import locust.main
-    locust.main.main()
+
+
+
+
 
 
